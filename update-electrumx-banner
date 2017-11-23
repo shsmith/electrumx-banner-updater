@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# update electrumx banner to report bitcoin memory pool, fees, height and time since last block
+# activate with cron job similar to this
+#*/2 * * * *  ~/bin/update-electrumx-banner
+
+# specify your bitcoin-cli location
+BITCOIN_CLI=/usr/bin/bitcoin-cli
+
+# specify your bitcoin data directory
+BITCOIN_DATADIR=~/.bitcoin
+
+# specify the location of your electrumx banner file
+# note: uses %{BANNER}.template as the template (top portion) of each banner update
+BANNER=~/.electrumx/banner
+
+# save initial banner as template for creation of new banners
+if [ ! -f ${BANNER}.template ]; then
+	cp ${BANNER} ${BANNER}.template
+fi
+
+# create new banner from template
+cp ${BANNER}.template ${BANNER}.new
+
+# timestamp
+printf "As of %s " "$(date -u)" >> ${BANNER}.new
+
+# mempool
+MEMPOOL=`${BITCOIN_CLI} -datadir=${BITCOIN_DATADIR} getmempoolinfo | grep size | grep -o '[0-9\.]*'`
+echo ${MEMPOOL} | awk '{print "there are " $1 " transactions in the memory pool"}' >> ${BANNER}.new
+
+# report last block and current height from electrumx journal
+TFILE=/tmp/btcfees-$$
+journalctl --since "6 hours ago" -u electrumx -o short-iso --utc | grep Prefetcher:new | tail -n 1 | sed -e 's/,//g' > ${TFILE}
+if [ `wc -c < ${TFILE}` -gt 10 ]; then
+	block_height=`< ${TFILE} awk '{print $7}'`
+	block_time=`< ${TFILE} awk '{print $1}'`
+	block_utime=`date -ud $block_time +'%s'`
+	now_utime=`date +'%s'`
+	minutes_ago=`echo $now_utime $block_utime | awk '{print int(($1-$2)/6)/10}'`
+	echo "Last block: $minutes_ago minutes ago; current height: $block_height" >> ${BANNER}.new
+fi
+rm ${TFILE}
+
+# report fees for various block times
+for BLOCKS in 2 6 12 24 144 504 1008
+do
+	FEERATE=`${BITCOIN_CLI} -datadir=$BITCOIN_DATADIR estimatesmartfee ${BLOCKS} | grep feerate  | grep -o '[0-9\.]*'`
+	echo ${BLOCKS} ${FEERATE} | awk '{print "Estimated fee for confirmation in " $1 " blocks (" int($1/0.06)/100 " hours) = " int(($2*100000)+0.5) " sat/B"}' >> ${BANNER}.new
+done
+
+# save backup of original banner on first run (just in case...)
+if [ ! -f ${BANNER}.backup ]; then
+	cp ${BANNER} ${BANNER}.backup
+fi
+
+# replace banner with newly generated version
+mv ${BANNER}.new ${BANNER}
