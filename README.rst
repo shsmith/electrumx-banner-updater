@@ -25,7 +25,6 @@ Adjust the BANNER environment to specify the your electrumx banner file.
 
 Run crontab -e and add a cron job to update the banner every x minutes:
 
-# update electrumx banner every 2 minutes
 */2 * * * *  /path/to/update-electrumx-banner
 
 
