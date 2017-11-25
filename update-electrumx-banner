@@ -27,26 +27,29 @@ printf "As of %s " "$(date -u)" >> ${BANNER}.new
 
 # mempool
 MEMPOOL=`${BITCOIN_CLI} -datadir=${BITCOIN_DATADIR} getmempoolinfo | grep size | grep -o '[0-9\.]*'`
-echo ${MEMPOOL} | awk '{print "there are " $1 " transactions in the memory pool"}' >> ${BANNER}.new
+printf "there are %'d transactions in the memory pool\n" ${MEMPOOL} >> ${BANNER}.new
 
 # report last block and current height from electrumx journal
 TFILE=/tmp/btcfees-$$
-journalctl --since "6 hours ago" -u electrumx -o short-iso --utc | grep Prefetcher:new | tail -n 1 | sed -e 's/,//g' > ${TFILE}
+journalctl --since "6 hours ago" -u electrumx -o short-iso --utc | grep Prefetcher:new | tail -n 1 > ${TFILE}
 if [ `wc -c < ${TFILE}` -gt 10 ]; then
 	block_height=`< ${TFILE} awk '{print $7}'`
 	block_time=`< ${TFILE} awk '{print $1}'`
 	block_utime=`date -ud $block_time +'%s'`
 	now_utime=`date +'%s'`
-	minutes_ago=`echo $now_utime $block_utime | awk '{print int(($1-$2)/6)/10}'`
-	echo "Last block: $minutes_ago minutes ago; current height: $block_height" >> ${BANNER}.new
+	minutes_ago=`echo ${now_utime} ${block_utime} | awk '{print int(($1-$2)/6)/10}'`
+	echo "Last block: ${minutes_ago} minutes ago; current height: ${block_height}" >> ${BANNER}.new
 fi
 rm ${TFILE}
 
 # report fees for various block times
 for BLOCKS in 2 6 12 24 144 504 1008
 do
-	FEERATE=`${BITCOIN_CLI} -datadir=$BITCOIN_DATADIR estimatesmartfee ${BLOCKS} | grep feerate  | grep -o '[0-9\.]*'`
-	echo ${BLOCKS} ${FEERATE} | awk '{print "Estimated fee for confirmation in " $1 " blocks (" int($1/0.06)/100 " hours) = " int(($2*100000)+0.5) " sat/B"}' >> ${BANNER}.new
+	FEERATE=`${BITCOIN_CLI} -datadir=${BITCOIN_DATADIR} estimatesmartfee ${BLOCKS} | grep feerate  | grep -o '[0-9\.\-]*' | awk '{print int(($1*100000)+0.5)}'`
+	echo ${BLOCKS} ${FEERATE} | awk '{if ($2 >= 0) print "Estimated fee for confirmation in " $1 " blocks (" int($1/0.06)/100 " hours) = " $2 " sat/B"}' >> ${BANNER}.new
+	if [ ${FEERATE} -le 1 ]; then
+		break;
+	fi
 done
 
 # save backup of original banner on first run (just in case...)
