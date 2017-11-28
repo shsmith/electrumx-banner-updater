@@ -52,10 +52,8 @@ else
 fi
 USDPERSAT=`echo ${USDPERBTC} | awk '{print $1/100000000}'`
 
-#BYTESPERTX=`bitcoin-cli getmempoolinfo | python3 -c 'import sys, json; j=json.load(sys.stdin); size=float(j["size"]); bytes=float(j["bytes"]); bytespertx=bytes/size; print(int(bytespertx)$
-#echo "Current exchange rate = ${USDPERBTC} USD/${TICKER}; average TX size = ${BYTESPERTX} bytes"
 BYTESPERTX=226
-echo "Current exchange rate = ${USDPERBTC} USD/${TICKER}; typical TX size = ${BYTESPERTX} bytes"
+echo "Current exchange rate = ${USDPERBTC} USD/${TICKER}; typical TX size = ${BYTESPERTX} bytes" >> ${BANNER}.new
 
 # report fees for various block times
 for BLOCKS in 2 6 12 24 144 504 1008
