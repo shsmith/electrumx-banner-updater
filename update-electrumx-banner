@@ -14,6 +14,14 @@ BITCOIN_DATADIR=~/.bitcoin
 # note: uses %{BANNER}.template as the template (top portion) of each banner update
 BANNER=~/.electrumx/banner
 
+# specify path to electrumx_rpc.py
+ELECTRUMX_RPC=/usr/local/bin/electrumx_rpc.py
+
+# specify electrumx RPC port
+RPC_PORT=8000
+
+TFILE=/tmp/update-electrumx-banner-$$
+
 # save initial banner as template for creation of new banners
 if [ ! -f ${BANNER}.template ]; then
 	cp ${BANNER} ${BANNER}.template
@@ -21,6 +29,14 @@ fi
 
 # create new banner from template
 cp ${BANNER}.template ${BANNER}.new
+
+# electrum network status
+${ELECTRUMX_RPC} getinfo > $TFILE
+mySessions=`grep sessions $TFILE | grep -o '[0-9]*'`
+goodPeers=`grep good $TFILE | grep -o '[0-9]*'`
+echo There are currently ${goodPeers} public electrum servers. >> ${BANNER}.new
+echo This server has ${mySessions} anonymous electrum connections. >> ${BANNER}.new
+echo "" >> ${BANNER}.new
 
 # timestamp
 printf "As of %s " "$(date -u)" >> ${BANNER}.new
@@ -30,7 +46,6 @@ MEMPOOL=`${BITCOIN_CLI} -datadir=${BITCOIN_DATADIR} getmempoolinfo | grep size |
 printf "there are %'d transactions in the memory pool\n" ${MEMPOOL} >> ${BANNER}.new
 
 # report last block and current height from electrumx journal
-TFILE=/tmp/btcfees-$$
 journalctl --since "6 hours ago" -u electrumx -o short-iso --utc | grep Prefetcher:new | tail -n 1 > ${TFILE}
 if [ `wc -c < ${TFILE}` -gt 10 ]; then
 	block_height=`< ${TFILE} awk '{print $7}'`
@@ -57,7 +72,7 @@ USDPERSAT=`echo ${USDPERBTC} | awk '{print $1/100000000}'`
 echo "Current exchange rate = ${USDPERBTC} USD/${TICKER}; typical TX size = ${BYTESPERTX} bytes" >> ${BANNER}.new
 
 # report fees for various block times
-for BLOCKS in 2 6 12 24 144 504 1008
+for BLOCKS in 2 6 12 24 144 288 504 1008
 do
         SATPERBYTE=`${BITCOIN_CLI} -datadir=${BITCOIN_DATADIR} estimatesmartfee ${BLOCKS} | grep feerate  | grep -o '[0-9\.\-]*' | awk '{print $1*100000+0.5}'`
         if [ `echo ${SATPERBYTE} | awk '{print int($1)}'` -lt 1 ]; then
