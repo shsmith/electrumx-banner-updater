@@ -15,7 +15,7 @@ BITCOIN_DATADIR=~/.bitcoin
 BANNER=~/.electrumx/banner
 
 # specify path to electrumx_rpc.py
-ELECTRUMX_RPC=/usr/local/bin/electrumx_rpc.py
+ELECTRUMX_RPC=/usr/local/bin/electrumx_rpc
 
 # specify electrumx RPC port
 RPC_PORT=8000
