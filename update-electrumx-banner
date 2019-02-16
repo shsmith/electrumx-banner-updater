@@ -34,7 +34,19 @@ cp ${BANNER}.template ${BANNER}.new
 ${ELECTRUMX_RPC} getinfo > $TFILE
 mySessions=`grep sessions $TFILE | grep -o '[0-9]*'`
 goodPeers=`grep good $TFILE | grep -o '[0-9]*'`
-echo There are currently ${goodPeers} public electrum servers. >> ${BANNER}.new
+
+blacklistedPeers=`${ELECTRUMX_RPC} peers | python3 -c '
+import sys, json, requests
+
+blacklist = json.loads(requests.get("https://electrum.org/blacklist.json").text)
+
+for peer in sys.stdin:
+        host = peer.split(" ",1)[0]
+        if any(item in blacklist for item in (host, "*." + ".".join(host.split(".")[-2:]))):
+                print("blacklisted: ", host)
+' | wc -l`
+echo There are currently `expr ${goodPeers} - ${blacklistedPeers}` public electrum servers. >> ${BANNER}.new
+#echo There are currently ${blacklistedPeers} blacklisted servers. >> ${BANNER}.new
 echo This server has ${mySessions} anonymous electrum connections. >> ${BANNER}.new
 echo "" >> ${BANNER}.new
 
