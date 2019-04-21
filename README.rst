@@ -46,9 +46,9 @@ Versions
 
 This script is working with the following software versions::
 
- Operating System:   Ubuntu 16.04
- ElectrumX:          1.18.12
- Bitcoin Core:       0.17.0
+ Operating System:   Ubuntu 18.04
+ ElectrumX:          1.11.0
+ Bitcoin Core:       0.17.1
  Bitcoin ABC:        0.18.4
  Bitcoin SV:         0.10.0
  
