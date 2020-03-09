@@ -20,6 +20,10 @@ ELECTRUMX_RPC=/usr/local/bin/electrumx_rpc
 # specify electrumx RPC port
 RPC_PORT=8000
 
+# specify coinmarketcap.com API key
+# One must sign up for at least a free 'basic' account at pro.coinmarketcap.com to use the API
+CMC_PRO_API_KEY=
+
 TFILE=/tmp/update-electrumx-banner-$$
 
 # save initial banner as template for creation of new banners
@@ -60,15 +64,15 @@ rm ${TFILE}
 
 # get exchange rate and average fee per satoshi
 if ${BITCOIN_CLI} --version | grep -q ABC; then
-	USDPERBTC=`curl -m 10 -L -s 'https://api.coinmarketcap.com/v1/ticker/bitcoin-cash/' | python3 -c 'import sys, json; j=json.load(sys.stdin); print(j[0]["price_usd"])'`
+	USDPERBTC=`curl -m 10 -L -s -H "X-CMC_PRO_API_KEY: ${CMC_PRO_API_KEY}" -H "Accept: application/json" -d "id=1831" -G https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest | jq -r '.data ."1831" .quote .USD .price`
 	TICKER=BCHABC
 	BYTESPERTX=226
 elif ${BITCOIN_CLI} --version | grep -q SV; then
-	USDPERBTC=`curl -m 10 -L -s 'https://api.coinmarketcap.com/v1/ticker/bitcoin-cash-sv/' | python3 -c 'import sys, json; j=json.load(sys.stdin); print(j[0]["price_usd"])'`
+	USDPERBTC=`curl -m 10 -L -s -H "X-CMC_PRO_API_KEY: ${CMC_PRO_API_KEY}" -H "Accept: application/json" -d "id=3602" -G https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest | jq -r '.data ."3602" .quote .USD .price`
 	TICKER=BCHSV
 	BYTESPERTX=226
 else
-	USDPERBTC=`curl -m 10 -L -s 'https://api.coinmarketcap.com/v1/ticker/bitcoin/' | python3 -c 'import sys, json; j=json.load(sys.stdin); print(j[0]["price_usd"])'`
+	USDPERBTC=`curl -m 10 -L -s -H "X-CMC_PRO_API_KEY: ${CMC_PRO_API_KEY}" -H "Accept: application/json" -d "id=1" -G https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest | jq -r '.data ."1" .quote .USD .price`
 	TICKER=BTC
 	BYTESPERTX=168
 fi
