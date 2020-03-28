@@ -59,19 +59,9 @@ fi
 rm ${TFILE}
 
 # get exchange rate and average fee per satoshi
-if ${BITCOIN_CLI} --version | grep -q ABC; then
-	USDPERBTC=`curl -m 10 -L -s 'https://api.coinmarketcap.com/v1/ticker/bitcoin-cash/' | python3 -c 'import sys, json; j=json.load(sys.stdin); print(j[0]["price_usd"])'`
-	TICKER=BCHABC
-	BYTESPERTX=226
-elif ${BITCOIN_CLI} --version | grep -q SV; then
-	USDPERBTC=`curl -m 10 -L -s 'https://api.coinmarketcap.com/v1/ticker/bitcoin-cash-sv/' | python3 -c 'import sys, json; j=json.load(sys.stdin); print(j[0]["price_usd"])'`
-	TICKER=BCHSV
-	BYTESPERTX=226
-else
-	USDPERBTC=`curl -m 10 -L -s 'https://api.coinmarketcap.com/v1/ticker/bitcoin/' | python3 -c 'import sys, json; j=json.load(sys.stdin); print(j[0]["price_usd"])'`
-	TICKER=BTC
-	BYTESPERTX=168
-fi
+USDPERBTC=`curl -m 10 -L -s 'https://blockchain.info/ticker' | python3 -c 'import sys, json; j=json.load(sys.stdin); print(j["USD"]["last"])'`
+TICKER=BTC
+BYTESPERTX=168
 USDPERSAT=`echo ${USDPERBTC} | awk '{print $1/100000000}'`
 
 printf "Current exchange rate = %0.2f USD/%s; typical TX size = %d bytes\n" ${USDPERBTC} ${TICKER} ${BYTESPERTX} >> ${BANNER}.new
